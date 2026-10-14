@@ -29,39 +29,33 @@
         </div>
     </div>
 
-    <!-- 메인 앱 컨테이너 (로그인 전에는 숨김) -->
+    <!-- 메인 앱 컨테이너 -->
     <div id="app-content" class="hidden w-full max-w-4xl">
-        <!-- 상단 내비게이션 바 -->
         <div class="flex justify-end gap-2 mb-4">
             <span id="user-email-display" class="text-xs text-[#8c857b] self-center mr-2"></span>
             <button id="logout-btn" class="px-3 py-1.5 bg-[#e6e2db] text-[#5c554b] rounded-lg text-xs font-medium hover:bg-[#ded9d0]">로그아웃</button>
         </div>
 
-        <!-- 스케줄러 메인 화면 -->
         <div class="bg-[#fcfbfa] p-6 rounded-3xl shadow-sm border border-[#e3ded6]">
             <h1 class="text-xl font-bold text-[#4a453e] mb-1">오늘의 스케줄</h1>
             <p class="text-xs text-[#8c857b] mb-6">오늘 하루도 알차고 보람차게 보내세요.</p>
             
-            <!-- 할 일 입력 영역 -->
             <div class="flex gap-2 mb-6">
                 <input type="text" id="todo-input" placeholder="새로운 할 일을 입력하세요..." class="flex-1 px-4 py-2.5 rounded-xl border border-[#d6cfc7] bg-white text-sm focus:outline-none focus:border-[#b8afa6]">
                 <button id="add-todo-btn" class="px-6 py-2.5 bg-[#d4b08c] text-white rounded-xl font-medium text-sm hover:bg-[#c29e79] transition">추가</button>
             </div>
 
-            <!-- 할 일 목록 영역 -->
-            <ul id="todo-list" class="space-y-2">
-                <!-- 동적으로 할 일이 추가되는 곳 -->
-            </ul>
+            <ul id="todo-list" class="space-y-2"></ul>
         </div>
     </div>
 
-    <!-- 파이어베이스 및 앱 로직 스크립트 -->
+    <!-- 파이어베이스 로직 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, deleteDoc, doc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-        // 👉 본인의 파이어베이스 설정값으로 교체하세요!
+        // 👉 본인의 파이어베이스 설정값으로 정확히 교체해 주세요!
         const firebaseConfig = {
             apiKey: "본인의_API_KEY",
             authDomain: "본인의_AUTH_DOMAIN",
@@ -71,9 +65,16 @@
             appId: "본인의_APP_ID"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        let auth, db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            console.log("Firebase 연결 성공!");
+        } catch (error) {
+            console.error("Firebase 초기화 오류:", error);
+            alert("파이어베이스 설정값이 잘못되었거나 비어있습니다. 코드를 확인해주세요.");
+        }
 
         const authModal = document.getElementById('auth-modal');
         const appContent = document.getElementById('app-content');
@@ -85,46 +86,61 @@
 
         let unsubscribe = null;
 
-        // 로그인 상태 감지
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                authModal.classList.add('hidden');
-                appContent.classList.remove('hidden');
-                userEmailDisplay.textContent = `${user.email} 님`;
-                loadTodos(user.uid);
-            } else {
-                authModal.classList.remove('hidden');
-                appContent.classList.add('hidden');
-                if (unsubscribe) unsubscribe();
-            }
-        });
+        if (auth) {
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    authModal.classList.add('hidden');
+                    appContent.classList.remove('hidden');
+                    userEmailDisplay.textContent = `${user.email} 님`;
+                    loadTodos(user.uid);
+                } else {
+                    authModal.classList.remove('hidden');
+                    appContent.classList.add('hidden');
+                    if (unsubscribe) unsubscribe();
+                }
+            });
+        }
 
-        // 회원가입 버튼
+        // 회원가입 버튼 이벤트
         document.getElementById('signup-btn').addEventListener('click', async () => {
+            if (!auth) { alert("파이어베이스가 연결되지 않았습니다."); return; }
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            if (!email || !password) {
+                alert("이메일과 비밀번호를 모두 입력해주세요.");
+                return;
+            }
             try {
-                await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+                await createUserWithEmailAndPassword(auth, email, password);
                 alert('회원가입 및 로그인 성공!');
             } catch (error) {
                 alert('회원가입 실패: ' + error.message);
             }
         });
 
-        // 로그인 버튼
+        // 로그인 버튼 이벤트
         document.getElementById('login-btn').addEventListener('click', async () => {
+            if (!auth) { alert("파이어베이스가 연결되지 않았습니다."); return; }
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            if (!email || !password) {
+                alert("이메일과 비밀번호를 모두 입력해주세요.");
+                return;
+            }
             try {
-                await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+                await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
                 alert('로그인 실패: ' + error.message);
             }
         });
 
-        // 로그아웃 버튼
+        // 로그아웃 버튼 이벤트
         document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth);
+            if (auth) signOut(auth);
         });
 
-        // 할 일 실시간 불러오기
         function loadTodos(uid) {
+            if (!db) return;
             const q = query(collection(db, "todos"), where("uid", "==", uid));
             unsubscribe = onSnapshot(q, (snapshot) => {
                 todoList.innerHTML = "";
@@ -141,11 +157,9 @@
             });
         }
 
-        // 할 일 추가 버튼
         document.getElementById('add-todo-btn').addEventListener('click', async () => {
             const text = todoInput.value.trim();
-            if (!text) return;
-            if (!auth.currentUser) return;
+            if (!text || !auth || !auth.currentUser || !db) return;
 
             try {
                 await addDoc(collection(db, "todos"), {
@@ -159,8 +173,8 @@
             }
         });
 
-        // 할 일 삭제 함수 (전역 등록)
         window.deleteTodo = async function(id) {
+            if (!db) return;
             try {
                 await deleteDoc(doc(db, "todos", id));
             } catch (error) {
