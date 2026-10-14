@@ -56,14 +56,15 @@
         import { getFirestore, collection, addDoc, deleteDoc, doc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // 👉 본인의 파이어베이스 설정값으로 정확히 교체해 주세요!
-        const firebaseConfig = {
-            apiKey: "본인의_API_KEY",
-            authDomain: "본인의_AUTH_DOMAIN",
-            projectId: "본인의_PROJECT_ID",
-            storageBucket: "본인의_STORAGE_BUCKET",
-            messagingSenderId: "본인의_MESSAGING_SENDER_ID",
-            appId: "본인의_APP_ID"
-        };
+const firebaseConfig = {
+  apiKey: "AIzaSyCp5UJ-jT6ly6KDYOCaj8b8X-FueW5y44Q",
+  authDomain: "my-desk-scheduler.firebaseapp.com",
+  projectId: "my-desk-scheduler",
+  storageBucket: "my-desk-scheduler.firebasestorage.app",
+  messagingSenderId: "845280282739",
+  appId: "1:845280282739:web:4060d1d458b58a5483c206",
+  measurementId: "G-QHTJ9179VC"
+};
 
         let auth, db;
         try {
